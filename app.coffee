@@ -76,35 +76,3 @@ for bucket, index in data.buckets
 		
 		cell.centerX()
 		buckets[index] = cell
-
-scroll.onScroll() ->
-	f = _.first(buckets)
-	l = _.last(buckets)
-	
-	# Last item move to top
-	if Utils.frameInFrame(f.screenFrame, screen_1.screenFrame)
-		contents.content.removeChild l
-		contents.content.addChild l
-		
-		# Update contents data
-		l.update l.custom = f.custom - 1
-		
-		# Set y position
-		l.maxY = f.y - gutter
-		# Reorder list item
-		buckets.unshift(buckets.pop())
-		
-	# First item move to bottom
-	else if !Utils.frameInFrame(buckets[1].screenFrame, screen_1.screenFrame)
-		contents.content.removeChild f
-		contents.content.addChild f
-		
-		# Update contents data
-		f.update f.custom = l.custom + 1
-		
-		# Set y position
-		f.y = l.maxY + gutter
-		# Reorder list item
-		buckets.push(buckets.shift())
-		
-	
