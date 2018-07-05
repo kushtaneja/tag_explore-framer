@@ -4,7 +4,6 @@ data = JSON.parse Utils.domLoadDataSync "data/data.json"
 rows = data.buckets.length
 gutter = 20
 bucketSize = 64
-# gutte r = bucketSize*.4
 tagWidthRatio = 0.153
 padding = 20
 scalefactor = 0.78
@@ -18,7 +17,6 @@ scroll = new ScrollComponent
 	backgroundColor: "transparent"
 	parent: screen_1
 
-# scroll.centerX()
 scroll.mouseWheelEnabled = true
 scroll.directionLock = false
 scroll.content.draggable.bounce = true
@@ -32,18 +30,17 @@ class Bucket extends Layer
 		@options.scale ?= 1
 		
 		
-		
 		@thumbnail = new Layer
-			width: @options.width*0.6
-			height: @options.height*0.6
 			borderRadius:  borderRadius
 
 		super @options
 		
 		@thumbnail.parent = @
+		@thumbnail.width = bucketSize*0.7
+		@thumbnail.height = bucketSize*0.7	
 		@thumbnail.center()
-		@thumbnail.backgroundColor = "white"
-		
+		@thumbnail.offsetHeight
+	
 		@onClick ->
 			scroll.scrollToPoint(Utils.frameCenterPoint(@.frame))
 
@@ -64,7 +61,7 @@ class bucketDetail extends Layer
 		@bucket = new Bucket
 		
 		@tittle = new TextLayer
-			fontSize: 24
+			fontSize: 18
 				
 			
 		super @options
@@ -169,69 +166,68 @@ centerPoint = Utils.frameCenterPoint(centerFrame)
 buckets = []
 activeIndex = null
 numberOfVisibleBuckets = Screen.height/rows
-middleObjectIndex = Math.round(rows / 2) - 1
+middleObjectIndex = Math.round(rows/2) - 1
 scaleForIndex = (index) ->
 	if index != middleObjectIndex
 		return Math.pow scalefactor, Math.abs(middleObjectIndex - index)
 	else
 		return 1
 
-middleBucketData = data.buckets[middleObjectIndex]
-middleBucket = new Bucket
-	backgroundColor: middleBucketData.backgroundColor
-middleBucket.center(focusedFrame)
-middleBucket.name = middleBucketData.name
-middleBucket.tags = middleBucketData.tags
-buckets[middleObjectIndex] = middleBucket
-focusedBuckett = middleBucket
+		
+scroll.contentInset =
+	top: focusedFrame.screenFrame.y + 0.2*bucketSize
+	bottom: Screen.height - focusedFrame.screenFrame.y - focusedFrame.height + 0.2*bucketSize
+
+# middleBucketData = data.buckets[middleObjectIndex]
+# middleBucket = new Bucket
+# 	backgroundColor: middleBucketData.backgroundColor
+# middleBucket.thumbnail.image = middleBucketData.image
+# middleBucket.center(focusedFrame)
+# middleBucket.data = middleBucketData
+# buckets[middleObjectIndex] = middleBucket
+# focusedBuckett = middleBucket
 
 for bucket, index in data.buckets
-	if index != middleObjectIndex
-		sumOfHeights = 0
-		if index < middleObjectIndex
-			for i in [index...middleObjectIndex]
-				sumOfHeights = sumOfHeights + bucketSize
-			yPosition = middleBucket.y - Math.abs(middleObjectIndex - index)*gutter -
-			sumOfHeights
-		else
-			for i in [middleObjectIndex...index]
-				sumOfHeights = sumOfHeights + bucketSize
-			yPosition = middleBucket.y + Math.abs(middleObjectIndex - index)*gutter +
-			sumOfHeights
-		
-		scale = Math.pow scalefactor, Math.abs(middleObjectIndex - index)
+# 	if index != middleObjectIndex
+# 		sumOfHeights = 0
+# 		if index < middleObjectIndex
+# 			for i in [index...middleObjectIndex]
+# 				sumOfHeights = sumOfHeights + bucketSize
+# 			yPosition = middleBucket.y - Math.abs(middleObjectIndex - index)*gutter -
+# 			sumOfHeights
+# 		else
+# 			for i in [middleObjectIndex...index]
+# 				sumOfHeights = sumOfHeights + bucketSize
+# 			yPosition = middleBucket.y + Math.abs(middleObjectIndex - index)*gutter +
+# 			sumOfHeights
+# 		
 		cell = new Bucket
 			name: "bucket #{index+1}"
-			y: yPosition
+			y: index*(gutter+bucketSize)
 			backgroundColor: bucket.backgroundColor, opacity: scaleForIndex(index)
-			scale: if index != middleObjectIndex then scale else 1
-		cell.gutter = scale*gutter
+			scale: scaleForIndex(index)
+		cell.thumbnail.image = bucket.image
 		
 		cell.centerX()
-		cell.tags = bucket.tags
+		cell.data = bucket
 		buckets[index] = cell
-		
-		scroll.contentInset =
-			top: focusedFrame.screenFrame.y - 0.4*bucketSize
-			bottom: focusedFrame.screenFrame.y - 0.4*bucketSize
 
 
 scroll.scrollToPoint(centerPoint)
 
 scroll.onMove ->
 	if focusedBucket = (bucket for bucket in buckets when Utils.frameInFrame(bucket.screenFrame, focusedFrame.screenFrame))[0]
-		focusedBuckett = focusedBucket
 		focusedBucketIndex = buckets.indexOf(focusedBucket)
-		focusBucketDetailView.bucket.backgroundColor = focusedBucket.backgroundColor
-		focusBucketDetailView.bucket.thumbnail.backgroundColor = focusedBucket.thumbnail.backgroundColor
-		focusBucketDetailView.tittle.text = focusedBuckett.name
+		focusBucketDetailView.bucket.backgroundColor = focusedBucket.data.backgroundColor
+		focusBucketDetailView.bucket.thumbnail.image = focusedBucket.data.image
+		focusBucketDetailView.tittle.text = focusedBucket.data.name
 		for tagLay in tagLayers
 			tagLay.visible = false 
 		
-		for tagObject, tagIndex in focusedBucket.tags when tagIndex < tags.length
+		for tagObject, tagIndex in focusedBucket.data.tags when tagIndex < tags.length
 			tagLayer = tagLayers[tagIndex]
 			tagLayer.label.text = tagObject.name
-			tagLayer.trendLabel.text = tagObject.trend	
+			tagLayer.trendLabel.text = tagObject.noOfShares	
 			tagLayer.visible = true	
 
 		for bucket, index in buckets 
@@ -244,6 +240,7 @@ scroll.onMove ->
 				
 			bucket.scale = if index != focusedBucketIndex then scale else 1				
 			bucket.opacity = if index != focusedBucketIndex then scale else 1
+		
 
 scroll.onScrollEnd ->	
 # 		scroll.scrollToPoint(centerPoint)
